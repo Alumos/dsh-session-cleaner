@@ -1,0 +1,64 @@
+name: Nightly
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: nightly
+  cancel-in-progress: true
+
+jobs:
+  nightly:
+    name: Rebuild the nightly package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Stamp a nightly version and pack
+        run: |
+          npm run check
+          BASE=$(node -p "require('./package.json').version")
+          DATE=$(date -u +%Y%m%d)
+          SHA=$(git rev-parse --short=8 HEAD)
+          VERSION="${BASE}-nightly.${DATE}.${SHA}"
+          npm version "${VERSION}" --no-git-tag-version --allow-same-version
+          npm pack
+          mv "dsh-session-cleaner-${VERSION}.tgz" dsh-session-cleaner-nightly.tgz
+          sha256sum dsh-session-cleaner-nightly.tgz > dsh-session-cleaner-nightly.sha256
+          echo "nightly build ${VERSION}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "install URL: https://github.com/${GITHUB_REPOSITORY}/releases/download/nightly/dsh-session-cleaner-nightly.tgz" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Refresh the nightly pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ASSET_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/nightly/dsh-session-cleaner-nightly.tgz"
+          if gh release view nightly >/dev/null 2>&1; then
+            gh release upload nightly \
+              dsh-session-cleaner-nightly.tgz \
+              dsh-session-cleaner-nightly.sha256 \
+              --clobber
+          else
+            gh release create nightly \
+              --prerelease \
+              --title "Nightly" \
+              --notes "Automated build of the latest main commit.
+
+Install in dsh with:
+
+\`\`\`text
+${ASSET_URL}
+\`\`\`" \
+              dsh-session-cleaner-nightly.tgz \
+              dsh-session-cleaner-nightly.sha256
+          fi

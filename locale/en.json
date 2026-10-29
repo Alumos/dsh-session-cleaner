@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Session Cleaner",
+    "description": "Delete a session from inside dsh: remove it from the sidebar session menu, delete its session directory on disk, and drop the row from every open window. Trash by default, permanent on request."
+  }
+}

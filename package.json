@@ -1,0 +1,61 @@
+{
+  "name": "dsh-session-cleaner",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "Delete a dsh Session from inside dsh: one click in the sidebar session menu removes the Session and its on-disk session directory, and the row disappears from every open window.",
+  "license": "MIT",
+  "author": "Alumos",
+  "homepage": "https://github.com/Alumos/dsh-session-cleaner#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Alumos/dsh-session-cleaner.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Alumos/dsh-session-cleaner/issues"
+  },
+  "keywords": [
+    "dsh-plugin",
+    "deepseek-harness",
+    "cordis",
+    "sessions",
+    "session",
+    "delete"
+  ],
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./package.json": "./package.json",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.svg",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "engines": {
+    "dsh": ">=0.2.0-rc.1"
+  },
+  "scripts": {
+    "check": "node --check index.js && node --check client.js && node scripts/check.mjs",
+    "pack:check": "npm pack --dry-run"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-workspace"
+      ]
+    }
+  }
+}
