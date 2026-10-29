@@ -33,6 +33,8 @@ dsh 的侧栏只有「归档」，没有删除；Host 的 `sessionPersistence` �
 
 ![运行中的会话：橙色警告 + 「关闭并删除」](docs/live-confirm.png)
 
+![确认对话框（默认移入回收站，可勾选永久删除）](docs/dialog.png)
+
 ## 安装
 
 dsh 的插件安装入口（设置 → 插件 → 添加插件 →「添加第三方插件」）接受 **npm 包名、Git 仓库地址、本地目录、`.tgz` 直链** 四种来源。
@@ -139,6 +141,7 @@ client.js             Client 半：侧栏菜单项 + 确认对话框
 locale/{zh,en}.json   展示元数据（meta.title / meta.description）
 icon.svg              图标
 docs/                 截图
+scripts/check.mjs     CI 用的 manifest / locale / 产物校验
 .github/workflows/    CI / 版本发布 / nightly
 ```
 

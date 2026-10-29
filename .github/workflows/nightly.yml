@@ -43,22 +43,18 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           ASSET_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/nightly/dsh-session-cleaner-nightly.tgz"
+          NOTES=$(printf 'Automated build of the latest main commit.\n\nInstall in dsh with this URL:\n\n%s\n' "$ASSET_URL")
           if gh release view nightly >/dev/null 2>&1; then
             gh release upload nightly \
               dsh-session-cleaner-nightly.tgz \
               dsh-session-cleaner-nightly.sha256 \
               --clobber
+            gh release edit nightly --notes "$NOTES"
           else
             gh release create nightly \
               --prerelease \
               --title "Nightly" \
-              --notes "Automated build of the latest main commit.
-
-Install in dsh with:
-
-\`\`\`text
-${ASSET_URL}
-\`\`\`" \
+              --notes "$NOTES" \
               dsh-session-cleaner-nightly.tgz \
               dsh-session-cleaner-nightly.sha256
           fi
