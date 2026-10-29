@@ -1,7 +1,7 @@
 // CI gate for the plugin bundle: manifest shape, display metadata, patch file,
 // icon budget and the Host half's exported lifecycle. Run with `node scripts/check.mjs`.
 import { readFile, stat } from 'node:fs/promises'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import path from 'node:path'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
@@ -47,7 +47,18 @@ for (const locale of ['zh', 'en']) {
 const icon = await stat(resolve('icon.svg'))
 ok(icon.size <= 256 * 1024, 'icon must be at most 256 KiB')
 
-const host = await import(resolve('index.js').replace(/\\/g, '/'))
+// pathToFileURL keeps this working on Windows, where `C:/x/index.js` is not a URL.
+const host = await import(pathToFileURL(resolve('index.js')).href)
+
+// The manifest version and the version /health reports must not drift: the
+// release workflow tags whatever package.json says, and a stale constant would
+// make a live Harness look like it is running the previous build.
+const source = await readFile(resolve('index.js'), 'utf8')
+const declared = /const PLUGIN_VERSION = '([^']+)'/.exec(source)?.[1]
+if (declared !== pkg.version) {
+  fail(`index.js reports PLUGIN_VERSION ${JSON.stringify(declared)} but package.json is ${pkg.version}`)
+}
+
 ok(host.name === 'dsh-session-cleaner', 'index.js must export name dsh-session-cleaner')
 ok(typeof host.apply === 'function', 'index.js must export apply(ctx, config)')
 ok(Array.isArray(host.inject) && host.inject.includes('webServer'), 'index.js must inject webServer')

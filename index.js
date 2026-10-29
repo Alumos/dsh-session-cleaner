@@ -37,7 +37,7 @@ export const name = 'dsh-session-cleaner'
 export const inject = ['webServer']
 
 /** Reported by `/health`, so a running Host can be told apart from a stale one. */
-const PLUGIN_VERSION = '0.2.0'
+const PLUGIN_VERSION = '0.2.1'
 
 /** Route prefix the client half fetches; `config.basePath` overrides it. */
 const DEFAULT_BASE_PATH = '/dsh-session-cleaner'
@@ -62,27 +62,37 @@ function serviceOf(ctx, key) {
 /**
  * The directories one deletion touches, resolved at call time so a moved or
  * re-configured data home is picked up without a restart.
+ *
+ * The Harness home and the Session root are resolved independently: a profile
+ * may point `sessionPersistence.root` somewhere else, and on Windows that can
+ * even be another drive. The home keeps the projection cache and the trash, so
+ * deriving it from the Session root would put them in the wrong place.
  */
 function rootsOf(ctx) {
   const persistence = serviceOf(ctx, 'sessionPersistence')
-  const reported = persistence && typeof persistence.root === 'string' ? persistence.root : null
-  let sessions = reported === null ? null : path.resolve(reported)
-  if (sessions === null) {
-    const homePath = serviceOf(ctx, 'dshHomePath')
-    if (typeof homePath === 'function') {
-      try {
-        sessions = path.resolve(homePath('sessions'))
-      } catch {
-        sessions = null
-      }
+  const homePath = serviceOf(ctx, 'dshHomePath')
+  const callHomePath = (segment) => {
+    if (typeof homePath !== 'function') return null
+    try {
+      const resolved = segment === undefined ? homePath() : homePath(segment)
+      return typeof resolved === 'string' && resolved !== '' ? path.resolve(resolved) : null
+    } catch {
+      return null
     }
   }
-  if (sessions === null || sessions === '') {
+
+  let home = callHomePath()
+  if (home === null) {
     const envHome = process.env.DSH_HOME
-    const home = typeof envHome === 'string' && envHome !== '' ? path.resolve(envHome) : path.join(os.homedir(), '.dsh')
-    sessions = path.join(home, 'sessions')
+    home =
+      typeof envHome === 'string' && envHome.trim() !== ''
+        ? path.resolve(envHome.trim())
+        : path.join(os.homedir(), '.dsh')
   }
-  const home = path.dirname(sessions)
+
+  const reported = persistence && typeof persistence.root === 'string' ? path.resolve(persistence.root) : null
+  const sessions = reported ?? callHomePath('sessions') ?? path.join(home, 'sessions')
+
   return {
     home,
     sessions,
@@ -209,6 +219,50 @@ async function waitFor(predicate, timeoutMs, intervalMs = 25) {
     if (Date.now() >= deadline) return false
     await delay(intervalMs)
   }
+}
+
+/**
+ * Filesystem mutations that Windows can refuse for a moment: a directory it
+ * holds a handle on (Explorer, the search indexer, antivirus) yields EPERM or
+ * EBUSY, and a delete racing a closed handle yields ENOTEMPTY. Retrying briefly
+ * is the difference between "delete failed" and a clean removal; on POSIX these
+ * codes essentially never appear, so the retry is a no-op there.
+ */
+const RETRYABLE_FS_CODES = new Set(['EPERM', 'EBUSY', 'EACCES', 'ENOTEMPTY', 'EMFILE', 'ENFILE'])
+
+async function retryFs(operation, attempts = 5) {
+  let lastError = null
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      return await operation()
+    } catch (error) {
+      lastError = error
+      if (!RETRYABLE_FS_CODES.has(error?.code) || attempt === attempts - 1) break
+      await delay(40 * (attempt + 1))
+    }
+  }
+  throw lastError
+}
+
+async function removeTree(target) {
+  return retryFs(() => fs.rm(target, { recursive: true, force: true }))
+}
+
+/**
+ * Move a Session directory into the trash. `rename` is atomic when both sides
+ * live on one volume and fails with EXDEV when they do not — including a
+ * `sessionPersistence.root` on another Windows drive — so copy-then-remove is
+ * the fallback rather than an error.
+ */
+async function moveIntoTrash(from, to) {
+  try {
+    await retryFs(() => fs.rename(from, to))
+    return
+  } catch (error) {
+    if (error?.code !== 'EXDEV') throw error
+  }
+  await retryFs(() => fs.cp(from, to, { recursive: true, force: true }))
+  await removeTree(from)
 }
 
 /**
@@ -343,27 +397,20 @@ async function deleteSession(ctx, roots, settings, request) {
   await pruneRegistry(ctx, sessionId)
 
   if (permanent) {
-    await fs.rm(located.dir, { recursive: true, force: true })
+    await removeTree(located.dir)
     removed.push(located.dir)
   } else {
     await fs.mkdir(roots.trash, { recursive: true })
+    // Windows rejects ':' in a file name, so the ISO stamp is flattened first.
     const stamp = new Date().toISOString().replace(/[:.]/g, '-')
     trashPath = path.join(roots.trash, `${stamp}-${sessionId}`)
-    try {
-      await fs.rename(located.dir, trashPath)
-    } catch (error) {
-      // A cross-device move cannot rename; fall back to copy-then-remove so the
-      // caller still gets the Session out of the sidebar.
-      if (error?.code !== 'EXDEV') throw error
-      await fs.cp(located.dir, trashPath, { recursive: true, force: true })
-      await fs.rm(located.dir, { recursive: true, force: true })
-    }
+    await moveIntoTrash(located.dir, trashPath)
     removed.push(located.dir)
   }
 
   const cachePath = path.join(roots.projcache, `${sessionId}.json`)
   try {
-    await fs.rm(cachePath, { force: true })
+    await retryFs(() => fs.rm(cachePath, { force: true }))
     removed.push(cachePath)
   } catch {}
 

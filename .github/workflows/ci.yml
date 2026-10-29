@@ -8,8 +8,14 @@ on:
 
 jobs:
   check:
-    name: Check plugin bundle
-    runs-on: ubuntu-latest
+    name: Check plugin bundle (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # Windows is the platform this plugin was hardened for; the offline test
+        # exercises the real rename/copy/remove paths of each filesystem there.
+        os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
       - uses: actions/checkout@v4
 
@@ -19,6 +25,9 @@ jobs:
 
       - name: Syntax and manifest checks
         run: npm run check
+
+      - name: Offline behaviour tests
+        run: npm test
 
       - name: Show what the install tarball would contain
         run: npm pack --dry-run

@@ -1,6 +1,6 @@
 {
   "name": "dsh-session-cleaner",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "type": "module",
   "description": "Delete a dsh Session from inside dsh: one click in the sidebar session menu removes the Session and its on-disk session directory, and the row disappears from every open window.",
@@ -44,7 +44,8 @@
   },
   "scripts": {
     "check": "node --check index.js && node --check client.js && node scripts/check.mjs",
-    "pack:check": "npm pack --dry-run"
+    "pack:check": "npm pack --dry-run",
+    "test": "node tests/offline.mjs"
   },
   "dsh": {
     "bundle": {

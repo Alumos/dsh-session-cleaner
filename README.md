@@ -129,7 +129,32 @@ curl -s -X POST http://127.0.0.1:3080/dsh-session-cleaner/delete \
 - 开发与验证环境：dsh `0.2.1-rc.4`（DSH Tauri Nightly，macOS）。
 - `package.json` 声明 `engines.dsh: ">=0.2.0-rc.1"`。
 - 依赖的 Host 能力：`webServer`（HTTP 路由）、`sessions`（`get`/`remove`）、`agents`（`get().cancel`）、
-  `workspaceRegistry`、`sessionPersistence.root`。少了 `sessions.remove` 的版本只会"关闭不了就拒绝删除"，不会误删。
+  `workspaceRegistry`、`sessionPersistence.root`、`dshHomePath`（可选，缺了就退回 `$DSH_HOME` / `~/.dsh`）。
+  少了 `sessions.remove` 的版本只会"关闭不了就拒绝删除"，不会误删。
+
+### 平台
+
+| 平台 | 状态 |
+| --- | --- |
+| macOS | 已在 dsh `0.2.1-rc.4` 上端到端实测（删除、回收站、运行中会话「关闭并删除」、侧栏行消失） |
+| Linux | 没在真机上装过 dsh；与 macOS 同属 POSIX 路径，CI 里跑同一套离线测试 |
+| Windows | 做了针对性加固，但**还没有在真 Windows + dsh 上跑过端到端**（我手上没有那台机器） |
+
+Windows 上具体做了什么：
+
+- 路径全部走 `node:path`；Session 根取 `sessionPersistence.root`，而 home 独立取自
+  `dshHomePath()` → `$DSH_HOME` → `~/.dsh`（`sessionPersistence.root` 在 `E:` 这类另一个盘时也能算对回收站与投影缓存的位置）。
+- 回收站目录名里的 `:` `.` 会被换成 `-`（Windows 文件名不允许 `:`），例如
+  `%USERPROFILE%\.dsh\session-trash\2026-10-29T07-45-30-154Z-session-<id>`。
+- 同一磁盘用 `fs.rename` 原子移动；跨盘时 `rename` 抛 `EXDEV`，自动降级为「复制 → 删除源目录」。
+- Explorer、杀毒、索引服务会短暂占用目录，`fs.rm` / `rename` 因此可能返回 `EPERM` / `EBUSY` / `ENOTEMPTY`；
+  这些错误最多退避重试 5 次（40/80/120/160 ms）才判定失败。
+- `session.lock` 在 Windows 上是命名内核信号量而不是文件，所以回收站条目里可能只有 `session.v4.jsonl.zstd`，属正常。
+- `windows-latest` 上跑 `npm run check` 与 `npm test`：manifest/语法校验 + 真实文件系统的删除、回收站、跨盘降级路径。
+
+**在 Windows 上装好后验证一次**：右键一个旧会话 →「删除会话」→ 看
+`%USERPROFILE%\.dsh\session-trash\` 是否出现对应目录、侧栏行是否消失；对正在运行的会话再试「关闭并删除」。
+如果有任何一步失败，把 dsh 日志（`%LOCALAPPDATA%` 下对应 profile 的日志）贴到 issue，我按真实报错修。
 
 ## 目录
 
@@ -142,6 +167,7 @@ locale/{zh,en}.json   展示元数据（meta.title / meta.description）
 icon.svg              图标
 docs/                 截图
 scripts/check.mjs     CI 用的 manifest / locale / 产物校验
+tests/offline.mjs     离线行为测试（假 Cordis 上下文 + 临时 home，三平台都跑）
 .github/workflows/    CI / 版本发布 / nightly
 ```
 
