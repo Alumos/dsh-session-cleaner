@@ -53,8 +53,10 @@ Alumos/dsh-session-cleaner
 到 [Releases](https://github.com/Alumos/dsh-session-cleaner/releases) 下载，或直接填某版本的资产地址：
 
 ```text
-https://github.com/Alumos/dsh-session-cleaner/releases/download/v0.2.0/dsh-session-cleaner-0.2.0.tgz
+https://github.com/Alumos/dsh-session-cleaner/releases/download/v0.2.1/dsh-session-cleaner-0.2.1.tgz
 ```
+
+> 每次发版后把上面两处版本号一起改掉即可；不想手动跟版本就用下面的 nightly 固定地址。
 
 `main` 每次提交都会自动重建一个 **nightly** 预发布，资产地址固定不变：
 
@@ -183,7 +185,7 @@ npm pack --dry-run        # 看安装包会带哪些文件
 
 ## 发布
 
-- 推 `v*` tag（例如 `git tag v0.2.0 && git push origin v0.2.0`）→ `.github/workflows/release.yml` 校验 tag 与 `package.json` 版本一致，
+- 推 `v*` tag（例如 `git tag v0.2.1 && git push origin v0.2.1`）→ `.github/workflows/release.yml` 校验 tag 与 `package.json` 版本一致，
   产出 `dsh-session-cleaner-<version>.tgz`（可直接安装）、源码 `.zip`、`SHA256SUMS.txt` 并创建 Release。
 - 推 `main` → `.github/workflows/nightly.yml` 重新构建并覆盖 `nightly` 预发布里的 `dsh-session-cleaner-nightly.tgz`（版本号带 `-nightly.<日期>.<sha>`）。
 
