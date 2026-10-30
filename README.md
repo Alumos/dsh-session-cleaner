@@ -54,6 +54,7 @@ npm 包的下载可以走镜像。
 - 大陆网络：安装源选「自定义地址」，填 npm 镜像（例如
   `https://mirrors.huaweicloud.com/repository/npm/`；npmmirror 对带 scope 的包支持不稳定，不行就换华为云）。
 - 装完在插件列表里启用。
+- 如果镜像里还查不到这个包（`npm view` 报 404），说明还没发布到 npm，先用方式 2 或方式 3。
 
 > 注意：npm 上另有一个同名的**无 scope** 包 `dsh-session-cleaner`（由其他人发布，功能类似）。
 > 本项目只发在 **`@alumos/dsh-session-cleaner`** 这个 scope 下，填错名字装到的不是这份代码。
