@@ -31,7 +31,10 @@ jobs:
       - name: Build the installable .tgz
         run: |
           npm run check
-          npm pack
+          # `npm pack` names scoped packages alumos-dsh-session-cleaner-<version>.tgz,
+          # so take the real filename instead of rebuilding it from the version.
+          TARBALL=$(npm pack --silent | tail -n 1)
+          mv "$TARBALL" "dsh-session-cleaner-${VERSION}.tgz"
           ls -l "dsh-session-cleaner-${VERSION}.tgz"
 
       - name: Build the source .zip

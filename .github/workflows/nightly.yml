@@ -31,8 +31,10 @@ jobs:
           SHA=$(git rev-parse --short=8 HEAD)
           VERSION="${BASE}-nightly.${DATE}.${SHA}"
           npm version "${VERSION}" --no-git-tag-version --allow-same-version
-          npm pack
-          mv "dsh-session-cleaner-${VERSION}.tgz" dsh-session-cleaner-nightly.tgz
+          # `npm pack` names scoped packages alumos-dsh-session-cleaner-<version>.tgz,
+          # so take the real filename instead of rebuilding it from the version.
+          TARBALL=$(npm pack --silent | tail -n 1)
+          mv "$TARBALL" dsh-session-cleaner-nightly.tgz
           sha256sum dsh-session-cleaner-nightly.tgz > dsh-session-cleaner-nightly.sha256
           echo "nightly build ${VERSION}" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
