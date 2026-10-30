@@ -33,11 +33,11 @@ import { promises as fs } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 
-export const name = 'dsh-session-cleaner'
+export const name = '@alumos/dsh-session-cleaner'
 export const inject = ['webServer']
 
 /** Reported by `/health`, so a running Host can be told apart from a stale one. */
-const PLUGIN_VERSION = '0.2.1'
+const PLUGIN_VERSION = '0.2.2'
 
 /** Route prefix the client half fetches; `config.basePath` overrides it. */
 const DEFAULT_BASE_PATH = '/dsh-session-cleaner'

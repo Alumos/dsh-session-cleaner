@@ -18,7 +18,7 @@
  */
 
 window.__ModuleLoader__.load({
-  id: 'dsh-session-cleaner',
+  id: '@alumos/dsh-session-cleaner',
   factory(require) {
     const React = require('react')
     const h = React.createElement

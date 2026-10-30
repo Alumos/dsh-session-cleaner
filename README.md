@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/Alumos/dsh-session-cleaner/actions/workflows/ci.yml/badge.svg)](https://github.com/Alumos/dsh-session-cleaner/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/Alumos/dsh-session-cleaner?include_prereleases&sort=semver)](https://github.com/Alumos/dsh-session-cleaner/releases)
+[![npm](https://img.shields.io/npm/v/@alumos/dsh-session-cleaner)](https://www.npmjs.com/package/@alumos/dsh-session-cleaner)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 在 dsh 里直接删除会话：侧栏会话菜单 →「删除会话」，会话记录、磁盘上的 `session` 目录、以及所有窗口里的那一行一起消失。
@@ -37,23 +38,32 @@ dsh 的侧栏只有「归档」，没有删除；Host 的 `sessionPersistence` �
 
 ## 安装
 
-dsh 的插件安装入口（设置 → 插件 → 添加插件 →「添加第三方插件」）接受 **npm 包名、Git 仓库地址、本地目录、`.tgz` 直链** 四种来源。
-把下面任意一种填进「Package name or address」即可。
+dsh 的插件市场（设置 → 插件 → 添加插件）接受 **npm 包名、Git 仓库地址、本地目录、`.tgz` 直链** 四种来源。
+**国内网络推荐方式 1（npm 包名 + 镜像）**：Git 仓库地址和 GitHub 直链都要直连 `github.com`，
+npm 包的下载可以走镜像。
 
-### 方式 1：GitHub 仓库地址（跟随 `main`，永远最新）
+### 方式 1：npm 包名（推荐，可走国内镜像）
+
+在「添加插件」里填包名：
 
 ```text
-Alumos/dsh-session-cleaner
+@alumos/dsh-session-cleaner
 ```
 
-> 等价于 `https://github.com/Alumos/dsh-session-cleaner`。跟随主分支，适合自己用。
+- 能直连 npm 官方源时，安装源选默认即可。
+- 大陆网络：安装源选「自定义地址」，填 npm 镜像（例如
+  `https://mirrors.huaweicloud.com/repository/npm/`；npmmirror 对带 scope 的包支持不稳定，不行就换华为云）。
+- 装完在插件列表里启用。
 
-### 方式 2：Release 里固定版本的 `.tgz` 直链（推荐）
+> 注意：npm 上另有一个同名的**无 scope** 包 `dsh-session-cleaner`（由其他人发布，功能类似）。
+> 本项目只发在 **`@alumos/dsh-session-cleaner`** 这个 scope 下，填错名字装到的不是这份代码。
+
+### 方式 2：Release 里固定版本的 `.tgz` 直链
 
 到 [Releases](https://github.com/Alumos/dsh-session-cleaner/releases) 下载，或直接填某版本的资产地址：
 
 ```text
-https://github.com/Alumos/dsh-session-cleaner/releases/download/v0.2.1/dsh-session-cleaner-0.2.1.tgz
+https://github.com/Alumos/dsh-session-cleaner/releases/download/v0.2.2/dsh-session-cleaner-0.2.2.tgz
 ```
 
 > 每次发版后把上面两处版本号一起改掉即可；不想手动跟版本就用下面的 nightly 固定地址。
@@ -64,11 +74,22 @@ https://github.com/Alumos/dsh-session-cleaner/releases/download/v0.2.1/dsh-sessi
 https://github.com/Alumos/dsh-session-cleaner/releases/download/nightly/dsh-session-cleaner-nightly.tgz
 ```
 
+### 方式 3：GitHub 仓库地址（需要能连 github.com）
+
+插件市场只接受**完整地址**或 `github:` 前缀，裸 `owner/repo` 会被判为非法包名：
+
+```text
+https://github.com/Alumos/dsh-session-cleaner
+github:Alumos/dsh-session-cleaner
+```
+
+> 安装时 Host 会先跑 `git ls-remote` 探活再 `git clone`，**不经过 npm 镜像**；连不上 GitHub 就会失败，
+> 原始输出在 `<profile>/.plugin-manager/logs/github-connection-*/git.log`。
+
 > **关于 `.zip`**：Release 里同时挂了源码 `.zip`，但 dsh 的安装入口只认 `.tgz` / `.tar.gz` 直链或 Git 仓库地址
 > （安装规格由 `parseInstallSpec` 解析，`TARBALL_SPEC = /\.(?:tgz|tar\.gz)(?:#.*)?$/i`），**不接受 `.zip`**。
-> 想用 `.zip` 的话：解压后用「方式 3」的本地目录安装。
 
-### 方式 3：本地目录
+### 方式 4：本地目录
 
 ```bash
 git clone https://github.com/Alumos/dsh-session-cleaner.git

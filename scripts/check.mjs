@@ -10,10 +10,11 @@ const ok = (condition, message) => {
   if (!condition) problems.push(message)
 }
 const resolve = (...parts) => path.join(root, ...parts)
+const escapeRe = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 const readJson = async (file) => JSON.parse(await readFile(resolve(file), 'utf8'))
 
 const pkg = await readJson('package.json')
-ok(pkg.name === 'dsh-session-cleaner', 'package.json name must be dsh-session-cleaner')
+ok(typeof pkg.name === 'string' && pkg.name.length > 0, 'package.json name must not be empty')
 ok(typeof pkg.version === 'string' && /^\d+\.\d+\.\d+/.test(pkg.version), 'package.json version must be semver')
 ok(pkg.type === 'module', 'package.json type must be module')
 ok(pkg.dsh?.bundle?.patch === './cordis.patch.yml', 'dsh.bundle.patch must be ./cordis.patch.yml')
@@ -35,8 +36,8 @@ for (const file of ['index.js', 'client.js', 'README.md', 'LICENSE', 'CHANGELOG.
 
 const patch = await readFile(resolve('cordis.patch.yml'), 'utf8')
 ok(/-\s*insert:/.test(patch), 'cordis.patch.yml must insert the plugin')
-ok(/id:\s*dsh-session-cleaner/.test(patch), 'cordis.patch.yml must use id dsh-session-cleaner')
-ok(/name:\s*['"]?dsh-session-cleaner['"]?/.test(patch), 'cordis.patch.yml must use name dsh-session-cleaner')
+ok(new RegExp(`id:\\s*['\"]?${escapeRe(pkg.name)}['\"]?`).test(patch), `cordis.patch.yml must use id ${pkg.name}`)
+ok(new RegExp(`name:\\s*['\"]?${escapeRe(pkg.name)}['\"]?`).test(patch), `cordis.patch.yml must use name ${pkg.name}`)
 
 for (const locale of ['zh', 'en']) {
   const dict = await readJson(`locale/${locale}.json`)
@@ -55,11 +56,12 @@ const host = await import(pathToFileURL(resolve('index.js')).href)
 // make a live Harness look like it is running the previous build.
 const source = await readFile(resolve('index.js'), 'utf8')
 const declared = /const PLUGIN_VERSION = '([^']+)'/.exec(source)?.[1]
-if (declared !== pkg.version) {
-  fail(`index.js reports PLUGIN_VERSION ${JSON.stringify(declared)} but package.json is ${pkg.version}`)
-}
+ok(
+  declared === pkg.version,
+  `index.js reports PLUGIN_VERSION ${JSON.stringify(declared)} but package.json is ${pkg.version}`,
+)
 
-ok(host.name === 'dsh-session-cleaner', 'index.js must export name dsh-session-cleaner')
+ok(host.name === pkg.name, `index.js must export name ${pkg.name}`)
 ok(typeof host.apply === 'function', 'index.js must export apply(ctx, config)')
 ok(Array.isArray(host.inject) && host.inject.includes('webServer'), 'index.js must inject webServer')
 
@@ -77,4 +79,4 @@ if (problems.length > 0) {
   for (const problem of problems) console.error(`  - ${problem}`)
   process.exit(1)
 }
-console.log(`✓ plugin check passed (dsh-session-cleaner@${pkg.version}, ${pkg.files.length} shipped entries)`)
+console.log(`✓ plugin check passed (${pkg.name}@${pkg.version}, ${pkg.files.length} shipped entries)`)

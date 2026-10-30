@@ -2,6 +2,15 @@
 
 本项目的版本号遵循 [SemVer](https://semver.org/lang/zh-CN/)；每次 `v*` tag 由 GitHub Actions 构建出可直接安装的 `.tgz`。
 
+## 0.2.2 — 2026-10-30
+
+- 包名改为 **`@alumos/dsh-session-cleaner`**：npm 上没有 scope 的 `dsh-session-cleaner` 已被其他人占用（v1.0.2，
+  功能类似），继续用旧名字会让人装到别的代码。`cordis.patch.yml` 的 bundle id/name、`index.js` 的 `name`
+  导出、`client.js` 的模块 id 同步更新；HTTP 路由 `/dsh-session-cleaner/*` 与工具名保持不变。
+- 去掉 `private: true`，加 `publishConfig.access: "public"`；`release.yml` 在仓库配置 `NPM_TOKEN` secret 时
+  自动 `npm publish`。
+- 文档：安装章节改为 npm 包名优先，并写清楚插件市场**不接受裸 `owner/repo`**、Git 安装**不走 npm 镜像**。
+
 ## 0.2.1 — 2026-10-29
 
 - 修复（Windows）：Session 目录的删除/移动对 Windows 上常见的短暂占用（`EPERM` / `EBUSY` / `ENOTEMPTY`，来自 Explorer、杀毒或索引服务）做最多 5 次退避重试，不再第一次就失败。

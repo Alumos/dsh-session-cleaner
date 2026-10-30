@@ -1,7 +1,6 @@
 {
-  "name": "dsh-session-cleaner",
-  "version": "0.2.1",
-  "private": true,
+  "name": "@alumos/dsh-session-cleaner",
+  "version": "0.2.2",
   "type": "module",
   "description": "Delete a dsh Session from inside dsh: one click in the sidebar session menu removes the Session and its on-disk session directory, and the row disappears from every open window.",
   "license": "MIT",
@@ -58,5 +57,8 @@
         "@deepseek-ai/dsh-client-ui-workspace"
       ]
     }
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
